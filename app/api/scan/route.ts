@@ -28,8 +28,15 @@ export async function POST() {
 
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
-      const data = await response.json();
-      return NextResponse.json(data);
+      const text = await response.text();
+      if (text) {
+        try {
+          const data = JSON.parse(text);
+          return NextResponse.json(data);
+        } catch (e) {
+          console.error('Failed to parse n8n JSON:', e);
+        }
+      }
     }
 
     // Fallback for successful but non-JSON responses (n8n test mode often does this)
@@ -39,9 +46,9 @@ export async function POST() {
       status: "success"
     });
   } catch (error) {
-    console.error('Scan proxy error:', error);
+    console.error('Scan proxy error details:', error);
     return NextResponse.json(
-      { error: 'Failed to communicate with analyst agents' },
+      { error: `Failed to communicate with analyst agents: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
